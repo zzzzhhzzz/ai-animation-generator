@@ -60,7 +60,7 @@ def main():
         print("="*60)
         print(f"输出目录: {result.get('output_dir')}")
         print(f"分镜文件: {result.get('storyboard_path')}")
-        print(f"代码文件: {result.get('output_path')}")
+        print(f"代码文件: {result.get('code_path')}")
         print(f"音频目录: {result.get('audio_dir')}")
     else:
         print("="*60)

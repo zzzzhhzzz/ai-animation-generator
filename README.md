@@ -221,9 +221,12 @@ manim -pql script.py SceneName
 ```
 multi_agent_animation/
 ├── agents/                  # Agent 实现
-│   ├── orchestrator.py     # 协调器
+│   ├── orchestrator.py     # 协调器（通用）
+│   ├── tutor_orchestrator.py # 协调器（数学辅导）
+│   ├── math_analyzer.py    # 数学分析
+│   ├── html_visualizer.py  # HTML可视化
 │   ├── image_analyzer.py   # 图片理解
-│   ├── script_writer.py    # 脚本编写
+│   ├── script_writer.py   # 脚本编写
 │   ├── storyboard_writer.py # 分镜编写
 │   ├── code_generator.py   # 代码生成
 │   ├── audio_producer.py   # 音频制作
@@ -236,8 +239,44 @@ multi_agent_animation/
 │   ├── code.py             # 代码验证
 │   └── script.py           # 脚本验证
 ├── fallback.py             # 降级处理
-├── main.py                 # 入口文件
+├── main.py                 # 入口文件（通用）
+├── main_tutor.py           # 入口文件（数学辅导）
 └── requirements.txt        # 依赖列表
+```
+
+## 两种工作流
+
+### 1. 通用工作流（main.py）
+
+适合快速生成简单的教学视频：
+- 输入：文字需求或图片
+- 输出：分镜、代码、音频
+
+```bash
+python main.py "帮我制作一个讲解勾股定理的教学视频"
+```
+
+### 2. 数学辅导工作流（main_tutor.py）
+
+适合生成高质量的数学辅导视频，包含完整的8步流程：
+- 步骤1：数学建模分析
+- 步骤2：HTML + SVG 可视化
+- 步骤3：分镜脚本生成
+- 步骤4：TTS 语音生成
+- 步骤5：验证并更新时长
+- 步骤6：生成脚手架代码
+- 步骤7：生成完整 Manim 代码
+- 步骤8：代码检查与渲染
+
+```bash
+# 完整流程
+python main_tutor.py "在正方形ABCD中，E是AB的中点，F是BC的中点，求证AE=EF"
+
+# 从第5步继续（已有分镜和音频）
+python main_tutor.py "继续生成" --step 5 --end 8
+
+# 仅生成到分镜
+python main_tutor.py "生成视频" --end 3
 ```
 
 ## 依赖

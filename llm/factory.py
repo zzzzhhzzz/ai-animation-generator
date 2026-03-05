@@ -96,7 +96,11 @@ class AnthropicLLM(LLMProvider):
             messages=filtered_messages,
             **kwargs
         )
-        return response.content[0].text
+        # 处理不同类型的 content block
+        for block in response.content:
+            if hasattr(block, 'text'):
+                return block.text
+        return ""
 
     def vision_chat(self, messages: list, model: str = "claude-3-5-sonnet-20241022", **kwargs) -> str:
         return self.chat(messages, model, **kwargs)

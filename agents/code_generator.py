@@ -176,6 +176,101 @@ class AnimationScene(Scene):
                 "error": f"代码生成失败: {e}"
             }
 
+    def generate_from_scaffold(self, scaffold: str, storyboard: str,
+                               audio_info: Dict = None,
+                               output_path: str = "script.py") -> Dict[str, Any]:
+        """从脚手架生成完整代码（步骤7）
+
+        Args:
+            scaffold: 脚手架代码
+            storyboard: 分镜脚本
+            audio_info: 音频信息
+            output_path: 输出路径
+
+        Returns:
+            生成结果
+        """
+        prompt = f"""请根据以下脚手架和分镜脚本，生成完整的 Manim 动画代码：
+
+## 脚手架（已包含结构）
+```python
+{scaffold}
+```
+
+## 分镜脚本
+{storyboard}
+
+## 音频信息
+{audio_info}
+
+## 生成要求
+
+1. **实现 calculate_geometry()**:
+   - 根据分镜中的几何关系计算点的坐标
+   - 注意：所有点使用2D坐标 (x, y, 0)
+   - 返回包含 points, lines, circles 的字典
+
+2. **实现 assert_geometry()**:
+   - 验证题目给定的几何条件（如：边相等、垂直等）
+   - 使用相对误差比较：abs(a - b) < 1e-4
+   - 检查图形是否在画布范围内
+
+3. **实现 define_elements()**:
+   - 定义所有需要的图形对象（点、线、圆、标注等）
+   - 使用 COLORS 中定义的颜色
+
+4. **实现 play_scene()**:
+   - 每幕第一行必须添加音频：self.add_sound(f"audio/{{audio_file}}")
+   - 动画时长 >= 音频时长
+   - 配音提到什么就用高亮效果强调什么
+
+5. **字幕退场**:
+   - 使用分镜中的 → 或 退场: 标记
+   - 确保所有文字元素都有淡出动画
+
+6. **无 LaTeX**:
+   - 全部使用 Text 替代 MathTex
+   - 上标用 Unicode：² ³ ⁴
+   - 分数用：½ 或 1/2
+
+7. **完整代码**:
+   - 包含所有必要的 import
+   - 可以直接运行
+
+请直接输出完整的 Python 代码，不要有其他说明。"""
+
+        try:
+            result = self.llm.chat_with_retry(
+                prompt,
+                task_difficulty="hard",
+                system_prompt=self.SYSTEM_PROMPT,
+                validator=self._validate_output,
+                fix_prompt_template="请修复以下代码中的错误：\n\n原始代码：\n{original_response}\n\n错误列表：\n{error}\n\n请修正以上问题并重新输出完整代码。确保：\n1. 包含 calculate_geometry() 实现\n2. 包含 assert_geometry() 验证\n3. 每幕添加音频\n4. Python 语法正确\n\n直接输出修正后的代码，不要有其他说明。",
+                max_tokens=6000
+            )
+
+            if result["success"]:
+                code = self._extract_code(result["response"])
+            else:
+                code = self._extract_code(result.get("response", scaffold))
+
+            # 保存代码
+            os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write(code)
+
+            return {
+                "success": True,
+                "code": code,
+                "output_path": output_path,
+                "attempts": result.get("attempts", 1)
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"代码生成失败: {e}"
+            }
+
     def _extract_code(self, text: str) -> str:
         """提取代码部分"""
         # 去除 markdown 代码标记
